@@ -1,0 +1,54 @@
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: wordflow-app
+        container_name: wordflow-app
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+        networks:
+            - wordflow-network
+        depends_on:
+            - db
+
+    web:
+        image: nginx:alpine
+        container_name: wordflow-web
+        restart: unless-stopped
+        ports:
+            - "80:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        networks:
+            - wordflow-network
+        depends_on:
+            - app
+
+    db:
+        image: mysql:8.0
+        container_name: wordflow-db
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        volumes:
+            - dbdata:/var/lib/mysql
+        networks:
+            - wordflow-network
+
+networks:
+    wordflow-network:
+        driver: bridge
+
+volumes:
+    dbdata:
+        driver: local
